@@ -6,7 +6,7 @@ import time
 from TagScriptEngine import Interpreter, block
 from typing import Union
 from aiohttp import ClientSession
-import asyncio
+import asynci
 
 class Fun(commands.Cog):
     """🥳 Fun Commands."""
