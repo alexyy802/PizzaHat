@@ -33,7 +33,7 @@ class PizzaHat(commands.Bot):
         self.no = '<:no:829841023445631017>'
         self.color = discord.Color.blue()
         self.christmas = discord.Color.red()
-        self.token = os.getenv('TOKEN')
+        self.token = os.environ['token']
         self.loop.run_until_complete(self.create_db_pool())
 
         for extension in INITIAL_EXTENSIONS:
