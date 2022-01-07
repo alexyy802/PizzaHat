@@ -6,6 +6,8 @@ import time
 from TagScriptEngine import Interpreter, block
 from typing import Union
 from aiohttp import ClientSession
+import requests
+import json
 
 class Fun(commands.Cog):
     """🥳 Fun Commands."""
@@ -32,6 +34,19 @@ class Fun(commands.Cog):
                     await ctx.send(f'**{user.name}** has paid their respects.')
         except asyncio.TimeoutError:
             await ctx.send('Timed out.')
+            
+    @commands.command()
+    async def quote(self, ctx):
+        try:
+            res = requests.get('https://zenquotes.io/api/random/quote')
+            data = json.load(res.text)
+            quote = data[0]['q']
+            author = data[0]['a']
+            await ctx.reply(quote + " -" + author)
+            return
+        except:
+            await ctx.send('Sorry, Something went wrong while trying to execute this command.')
+            return 
         
     @commands.command()
     async def choose(self, ctx, *options):
@@ -129,7 +144,7 @@ class Fun(commands.Cog):
         )
         await ctx.send(embed=em)
     
-    @commands.command(usage='hack <member>')
+    @commands.command()
     async def hack(self, ctx, member: discord.Member):
         """Hack someone and get their details."""
         used_words = ['Nerd','Sucker','Noob','Sup','Yo','Wassup','Nab','Nub','fool','stupid','b1tch','fvck','idiot']
@@ -155,22 +170,6 @@ class Fun(commands.Cog):
         await asyncio.sleep(1.55)
         await hacking.edit(content=f"{ctx.author.mention} successfully hacked {member.mention}")
         await ctx.send("The ultimate, totally real hacking has been completed!")
-    
-    @commands.command(aliases=['dj'])
-    async def dadjoke(self, ctx):
-        """Sends a dadjoke."""
-
-        url = "https://dad-jokes.p.rapidapi.com/random/jokes"
-        headers = {
-            'x-rapidapi-key': "81dd963d15mshf3e3a91dd6fe3cap1d971djsnbeb11a691831",
-            'x-rapidapi-host': "dad-jokes.p.rapidapi.com" 
-        }
-
-        async with ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
-                r = await response.json()
-                r = r["body"][0]
-                await ctx.send(f"**{r['setup']}**\n||{r['punchline']}||")
 
 def setup(bot):
     bot.add_cog(Fun(bot))

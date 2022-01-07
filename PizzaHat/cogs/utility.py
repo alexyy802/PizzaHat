@@ -1,8 +1,9 @@
-﻿import discord
+import discord
 from discord.ext import commands
 import time
 import datetime
 import shlex
+import requests
 
 start_time = time.time()
 def to_keycap(c):
@@ -12,6 +13,11 @@ class Utility(commands.Cog):
     """🛠️ Utility Commands"""
     def __init__(self,bot):
         self.bot = bot
+
+    @commands.command(aliases=['latency'])
+    async def ping(self,ctx):
+        """Shows latency of bot."""
+        await ctx.send(f":ping_pong: Pong!\nBot latency: `{round(self.bot.latency*1000)}ms`")
 
     @commands.command(aliases=['whois','ui', 'user-info'])
     @commands.guild_only()
@@ -24,7 +30,7 @@ class Utility(commands.Cog):
         if member is None:
             member = ctx.author
 
-        rolelist = [r.mention for r in member.roles if r != ctx.guild.default_role]
+        rolelist = [role.mention for role in list(member.roles[::-1]) if not role is ctx.guild.default_role] 
         roles = ", ".join(rolelist)
 
         def format_date(dt:datetime.datetime):
@@ -32,37 +38,12 @@ class Utility(commands.Cog):
                 return 'N/A'
             return f'<t:{int(dt.timestamp())}>'
 
-        # fl = member.public_flags
-        # fe = []
-
-        # f = {
-        #     fl.bug_hunter: '<:bug_hunter_lvl1:876079074693480508>',
-        #     fl.bug_hunter_level_2: '<:bug_hunter_lvl2:876079074647371796>',
-        #     fl.staff: '<:staff:876081519540715521>',
-        #     fl.early_supporter: '<:support:843936375941103646>',
-        #     fl.verified_bot_developer: '<:developer:833297795761831956>',
-        #     fl.partner: '<:partnerbadge:819942435550396448>',
-        #     fl.hypesquad_balance: '<:balance:876078067297173534>',
-        #     fl.hypesquad_bravery: '<:bravery:876078067548835850>',
-        #     fl.hypesquad_brilliance: '<:briliance:876078066848366662>',
-        #     fl.system: '<:system:876082667064537149>',
-        #     fl.verified_bot: '<:verified_bot:876082989812023357>',
-        # }
-
-        # for x, y in f.items():
-        #     if x in fl:
-        #         fe.append(y)
-
         em = discord.Embed(
             description=f"**User ID:** {member.id}\n**Display Name:** {member.display_name}\n\n**Account Creation:** {format_date(member.created_at)}\n**Joined Server:** {format_date(member.joined_at)}\n",
             color=self.bot.color,
             timestamp=ctx.message.created_at
         )
         em.set_author(name = f"Userinfo of {member}")
-        # if fl:
-        #     em.add_field(name="Discord Badges", value=' | '.join(fe), inline=False)
-        # else:
-        #     em.add_field(name="Discord Badges", value=f'{self.bot.no} None', inline=False)
         em.add_field(name=f'Roles [{len(rolelist)}]', value=roles or f'{self.bot.no} N/A', inline=False)
         if member.bot:
             em.add_field(name='Member Bot', value=f'{self.bot.yes} Yes', inline=False)
@@ -111,7 +92,6 @@ class Utility(commands.Cog):
         )
         em.add_field(name='<:owner:811749694744297502> Owner', value=ctx.guild.owner, inline=False)
         em.add_field(name='Description', value=ctx.guild.description, inline=False)
-        em.add_field(name='Region', value=f"{str(ctx.guild.region).replace('-', ' ').title()}", inline=False)
         em.add_field(name='Guild ID', value=ctx.guild.id, inline=False)
         em.add_field(name=f'Roles', value=len(ctx.guild.roles), inline=False)
         em.add_field(name=f'Members ({ctx.guild.member_count})', value=f'<:memberlist:811747305543434260> Humans: {len([m for m in ctx.guild.members if not m.bot])}\n<:botlist:811747723434786859> Bots: {sum(member.bot for member in ctx.guild.members)}', inline=False)
@@ -123,7 +103,7 @@ class Utility(commands.Cog):
             em.add_field(name='Server Features', value=', '.join(info), inline=False)
         else:
             em.add_field(name='Server Features', value=f'{self.bot.no} None', inline=False)
-        em.add_field(name='Verification level', value=ctx.guild.verification_level, inline=False)
+        em.add_field(name='Verification level', value=str(ctx.guild.verification_level).capitalize(), inline=False)
         em.set_thumbnail(url=f"{ctx.guild.icon_url}")
         em.set_footer(text=f'Created at: {formatted_date(ctx.guild.created_at)}')
         
@@ -238,11 +218,6 @@ class Utility(commands.Cog):
         embed.set_thumbnail(url=emoji.url)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['latency'])
-    async def ping(self,ctx):
-        """Shows latency of bot."""
-        await ctx.send(f":ping_pong: Pong!\nBot latency: `{round(self.bot.latency*1000)}ms`")
-
     @commands.command(name='invite')
     async def invite_cmd(self, ctx):
         """Gives invite of bot."""
@@ -252,7 +227,7 @@ class Utility(commands.Cog):
             color=self.bot.color
         )
         em.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
-        em.set_footer(text='Thank you!')
+        em.set_footer(text='Invite me to get good luck!')
         await ctx.send(embed=em)
 
     @commands.command()
@@ -272,6 +247,13 @@ class Utility(commands.Cog):
         e = await channel.send(embed=em)
         await e.add_reaction('⬆️')
         await e.add_reaction('⬇️')
+
+    @commands.command(aliases=['team'])
+    async def credits(self,ctx):
+        """Shows users who have contributed to this bot."""
+        em = discord.Embed(title=f'{self.bot.user.name} Contributors', color=self.bot.color)
+        em.description=f"Drapes (<@583745403598405632>): [Github](https://github.com/drapespy)\nGDKID (<@596481615253733408>): [Github](https://github.com/GDKID69)\nCarl (<@106429844627169280>): [Github](https://github.com/CarlGroth)"
+        await ctx.send(embed=em)
 
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
@@ -338,7 +320,7 @@ class Utility(commands.Cog):
         member = ctx.message.guild.me
         await self.say_permissions(ctx, member, channel)
 
-    @commands.command(aliases=['av'])
+    @commands.command(aliases=['av','profile','pfp'])
     async def avatar(self, ctx, member: discord.Member=None):
         """
         Displays a user's avatar
@@ -427,6 +409,50 @@ class Utility(commands.Cog):
         no_thumb = "👎"
         await msg.add_reaction(yes_thumb)
         await msg.add_reaction(no_thumb)
+        
+    @commands.command()
+    async def covid(self, ctx, country):
+        """
+        Get Covid-19 stats from a country or the world.
+        """
+        try:
+            url = f"https://coronavirus-19-api.herokuapp.com/countries/{country}"
+            stats = requests.get(url)
+            json_stats = stats.json()
+            country = json_stats["country"]
+            totalCases = json_stats["cases"]
+            todayCases = json_stats["todayCases"]
+            totalDeaths = json_stats["deaths"]
+            todayDeaths = json_stats["todayDeaths"]
+            recovered = json_stats["recovered"]
+            active = json_stats["active"]
+            critical = json_stats["critical"]
+            casesPerOneMil = json_stats["casesPerOneMillion"]
+            deathsPerOneMil = json_stats["deathsPerOneMillion"]
+            totalTests = json_stats["totalTests"]
+            testsPerOneMil = json_stats["testsPerOneMillion"]
 
+            e = discord.Embed(
+                title=f"Covid-19 stats of {country}",
+                description="This is not live info. Therefore it might not be as accurate, but is approximate info.",
+                color=self.bot.color
+            )
+            e.add_field(name="Total Cases", value=totalCases, inline=True)
+            e.add_field(name="Today's Cases", value=todayCases, inline=True)
+            e.add_field(name="Total Deaths", value=totalDeaths, inline=True)
+            e.add_field(name="Today's Deaths", value=todayDeaths, inline=True)
+            e.add_field(name="Recovered", value=recovered, inline=True)
+            e.add_field(name="Active", value=active, inline=True)
+            e.add_field(name="Critical", value=critical, inline=True)
+            e.add_field(name="Cases per one million", value=casesPerOneMil, inline=True)
+            e.add_field(name="Deaths per one million", value=deathsPerOneMil, inline=True)
+            e.add_field(name="Tests per one million", value=testsPerOneMil, inline=True)
+            e.add_field(name="Total tests", value=totalTests, inline=True)
+            e.set_thumbnail(url="https://www.osce.org/files/imagecache/10_large_gallery/f/images/hires/8/a/448717.jpg")
+
+            await ctx.send(embed=e)
+        except:
+            await ctx.send(f"{self.bot.no} Invalid country name or API error! Try again later.")
+        
 def setup(bot):
     bot.add_cog(Utility(bot))
